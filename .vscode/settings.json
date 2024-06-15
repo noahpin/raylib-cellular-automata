@@ -7,5 +7,7 @@
 		"**/.DS_Store": true,
 		"**/*.o": true,
 		"**/*.exe": true,
-	}
+	},
+	"C_Cpp.default.compilerPath": "C:\\msys64\\mingw64\\bin\\g++.exe",
+	"C_Cpp.errorSquiggles": "enabled"
 }
