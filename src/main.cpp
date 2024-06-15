@@ -9,7 +9,7 @@ int main()
     cout << "Hello, World!" << endl;
     const int screenWidth = 1200;
     const int screenHeight = 900;
-    const int pixelSize = 5;
+    const int pixelSize = 3;
     const int virtualWidth = screenWidth / pixelSize;
     const int virtualHeight = screenHeight / pixelSize;
     const float virtualRatio = (float)virtualWidth / (float)screenHeight;
@@ -31,8 +31,10 @@ int main()
     ParticleWorld particleWorld(virtualWidth, virtualHeight);
 
     double previousTime = GetTime();
-    double targetFPS = 60;
+    double targetFPS = 1000;
     double deltaTime = 0;
+
+    Mat_Type drawType = t_sand;
 
     while (!WindowShouldClose())
     {
@@ -44,14 +46,54 @@ int main()
 
         if (click)
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 30; i++)
             {
                 int r = 10;
                 int xO = rand() % r - (r / 2);
                 int yO = rand() % r - (r / 2);
-                Particle *nP = new Particle{t_sand, color_sand};
+                Color drawColor = WHITE;
+                switch (drawType)
+                {
+                case t_air:
+                {
+                    drawColor = color_air();
+                    break;
+                }
+                case t_sand:
+                {
+                    drawColor = color_sand();
+                    break;
+                }
+                case t_solid:
+                {
+                    drawColor = color_solid();
+                    break;
+                }
+                case t_water:
+                {
+                    drawColor = color_water();
+                    break;
+                }
+                }
+                Particle *nP = new Particle{drawType, drawColor};
                 particleWorld.SetParticle(Vector2{(float)virtualMouseX + xO, (float)virtualMouseY + yO}, nP);
             }
+        }
+        if (IsKeyPressed(KEY_A))
+        {
+            drawType = t_air;
+        }
+        if (IsKeyPressed(KEY_S))
+        {
+            drawType = t_sand;
+        }
+        if (IsKeyPressed(KEY_B))
+        {
+            drawType = t_solid;
+        }
+        if (IsKeyPressed(KEY_W))
+        {
+            drawType = t_water;
         }
         particleWorld.UpdateParticles();
         BeginTextureMode(target);
