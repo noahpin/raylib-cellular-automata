@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <vector>
 
-float randomBetween(float a, float b);
+double randomBetween(double a, double b);
 
 typedef int Mat_Type;
 #define t_air (Mat_Type)0
@@ -13,8 +13,10 @@ typedef int Mat_Type;
 
 #define color_air() WHITE
 #define color_solid() ColorBrightness(BLACK, randomBetween(-.1f, .3f))
-#define color_sand() ColorBrightness(YELLOW, randomBetween(-.1f, .9f))
+#define color_sand() ColorBrightness(YELLOW, randomBetween(-.5f, 0.0f))
 #define color_water() ColorBrightness(BLUE, randomBetween(-0.2f, .2f))
+
+#define GRAVITY 9.80f
 
 class Particle
 {
@@ -33,6 +35,10 @@ public:
         _velocity = velocity;
     };
     Vector2 const getPosition() { return _position; };
+    Vector2 const getVelocity() { return _velocity; };
+    void setVelocity(Vector2 v) { _velocity = v; };
+    Vector2 const getAcceleration() { return _acceleration; };
+    void setAcceleration(Vector2 a) { _acceleration = a; };
     int const getX() { return _position.y; };
     int const getY() { return _position.x; };
     Color const getColor() { return _color; };
@@ -41,7 +47,8 @@ public:
 
 private:
     Vector2 _position = {0, 0};
-    Vector2 _velocity = {0.0f, 0.0f};
+    Vector2 _velocity = {0.0f, -2.0f};
+    Vector2 _acceleration = {0.0f, GRAVITY};
     Color _color = BLACK;
     bool _hasBeenUpdated = false;
     Mat_Type _materialType = t_air;
@@ -61,6 +68,9 @@ public:
     int CoordToIndex(int x, int y);
     int CoordToIndex(Vector2 v);
     Vector2 IndexToCoord(int idx);
+    double const getDeltaTime() { return _deltaTime; };
+    void setDeltaTime(double dt) { _deltaTime = dt; };
+    void setCurrentTime(double t) { _currentTime = t; };
 
 protected:
     bool InBounds(int x, int y) { return x >= 0 && y >= 0 && x < _width && y < _height; }
@@ -92,6 +102,8 @@ private:
     int _maxParticles;
     int _width;
     int _height;
+    double _deltaTime;
+    double _currentTime;
 };
 
 ParticleWorld::ParticleWorld(int width, int height)
@@ -236,9 +248,19 @@ Vector2 ParticleWorld::IndexToCoord(int idx)
 
 void ParticleWorld::UpdateSand(int x, int y)
 {
+    double deltaPass = 0.2;
+    Particle *p = ParticleAtCoord(x, y);
+    Vector2 vel = p->getVelocity();
+    Vector2 accel = p->getAcceleration();
+    // calculate y velocity
+    float xVelocity = vel.x + accel.x * _deltaTime;
+    float yVelocity = vel.y + accel.y * _deltaTime;
+    int xDelta = xVelocity;
+    int yDelta = yVelocity;
     bool down = IsEmptyOrWater(x, y + 1) && InBounds(x, y + 1);
     bool downLeft = IsEmptyOrWater(x - 1, y + 1) && InBounds(x - 1, y + 1);
     bool downRight = IsEmptyOrWater(x + 1, y + 1) && InBounds(x + 1, y + 1);
+    p->setVelocity(Vector2{(float)xVelocity, (float)yVelocity});
 
     if (downLeft && downRight)
     {
@@ -247,15 +269,28 @@ void ParticleWorld::UpdateSand(int x, int y)
     }
     if (down)
     {
-        MoveParticle(x, y, x, y + 1);
+        int dstY = y;
+        for (int i = 1; i <= yDelta; i++)
+        {
+            int t = y + i;
+            if (IsEmptyOrWater(x, t) && InBounds(x, t))
+            {
+                dstY = t;
+            }
+            else
+            {
+                break;
+            }
+        }
+        MoveParticle(x, y, x, dstY);
     }
     else if (downLeft)
     {
-        MoveParticle(x, y, x - 1, y + 1);
+        MoveParticle(x, y, x - 1, y + yDelta);
     }
     else if (downRight)
     {
-        MoveParticle(x, y, x + 1, y + 1);
+        MoveParticle(x, y, x + 1, y + yDelta);
     }
 }
 
@@ -318,9 +353,9 @@ void ParticleWorld::SwapParticles(int id1, int id2)
     _particles[id2] = tmp;
 }
 
-float randomBetween(float a, float b)
+double randomBetween(double a, double b)
 {
-    float normalized = (float)std::rand() / RAND_MAX;
+    double normalized = (double)std::rand() / RAND_MAX;
     normalized *= (b - a);
     return normalized + a;
 }

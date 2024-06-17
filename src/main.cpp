@@ -12,7 +12,7 @@ int main()
     const int pixelSize = 3;
     const int virtualWidth = screenWidth / pixelSize;
     const int virtualHeight = screenHeight / pixelSize;
-    const float virtualRatio = (float)virtualWidth / (float)screenHeight;
+    const double virtualRatio = (double)virtualWidth / (double)screenHeight;
     InitWindow(screenWidth, screenHeight, "Cellular Automata!");
 
     Camera2D worldSpaceCamera = {0};
@@ -23,7 +23,7 @@ int main()
 
     RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
 
-    Rectangle sourceRec = {0.0f, 0.0f, (float)target.texture.width, -(float)target.texture.height};
+    Rectangle sourceRec = {0.0f, 0.0f, (double)target.texture.width, -(double)target.texture.height};
     Rectangle destRec = {-virtualRatio, -virtualRatio, screenWidth + (virtualRatio * 2), screenHeight + (virtualRatio * 2)};
 
     Vector2 origin = {0.0f, 0.0f};
@@ -31,8 +31,11 @@ int main()
     ParticleWorld particleWorld(virtualWidth, virtualHeight);
 
     double previousTime = GetTime();
-    double targetFPS = 1000;
-    double deltaTime = 0;
+    int targetFPS = 60;
+    float deltaTime = 0.0f;
+    double currentTime = 0.0;
+    double updateDrawTime = 0.0;
+    double waitTime = 0.0;
 
     Mat_Type drawType = t_sand;
 
@@ -44,13 +47,16 @@ int main()
         int virtualMouseY = mouseY / pixelSize;
         bool click = IsMouseButtonDown(0);
 
+        particleWorld.setDeltaTime(deltaTime);
+        particleWorld.setCurrentTime(GetTime());
+
         if (click)
         {
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 1; i++)
             {
-                int r = 10;
-                int xO = rand() % r - (r / 2);
-                int yO = rand() % r - (r / 2);
+                int r = 1;
+                int xO = 0;
+                int yO = 0;
                 Color drawColor = WHITE;
                 switch (drawType)
                 {
@@ -126,19 +132,24 @@ int main()
             EndMode2D();
 
             DrawFPS(GetScreenWidth() - 95, 10);
+            DrawText(TextFormat("deltatime: %f", deltaTime), GetScreenWidth() - 220, 70, 20, LIME);
         }
         EndDrawing();
 
-        double currentTime = GetTime();
-        double updateDrawTime = currentTime - previousTime;
-
-        double waitTime = (1.0f / (float)targetFPS) - updateDrawTime;
-        if (waitTime > 0.0)
+        currentTime = GetTime();
+        updateDrawTime = currentTime - previousTime;
+        if (targetFPS > 0) // We want a fixed frame rate
         {
-            WaitTime((float)waitTime);
-            currentTime = GetTime();
-            deltaTime = (float)(currentTime - previousTime);
+            waitTime = (1.0f / (float)targetFPS) - updateDrawTime;
+            if (waitTime > 0.0)
+            {
+                WaitTime((float)waitTime);
+                currentTime = GetTime();
+                deltaTime = (float)(currentTime - previousTime);
+            }
         }
+        else
+            deltaTime = (float)updateDrawTime;
         previousTime = currentTime;
     }
 
