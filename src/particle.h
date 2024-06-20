@@ -47,7 +47,7 @@ public:
 
 private:
     Vector2 _position = {0, 0};
-    Vector2 _velocity = {0.0f, -2.0f};
+    Vector2 _velocity = {2.0f, 1.0f};
     Vector2 _acceleration = {0.0f, GRAVITY};
     Color _color = BLACK;
     bool _hasBeenUpdated = false;
@@ -88,6 +88,16 @@ protected:
     bool IsEmptyOrWater(Particle *p)
     {
         return (p != nullptr && (p->getType() == t_water || p->getType() == t_air));
+    }
+    bool IsWater(int x, int y)
+    {
+
+        Particle *p = ParticleAtCoord(x, y);
+        return IsWater(p);
+    }
+    bool IsWater(Particle *p)
+    {
+        return (p != nullptr && p->getType() == t_water);
     }
     void SwapParticles(int x1, int y1, int x2, int y2);
     void SwapParticles(int id1, int id2);
@@ -260,6 +270,16 @@ void ParticleWorld::UpdateSand(int x, int y)
     bool down = IsEmptyOrWater(x, y + 1) && InBounds(x, y + 1);
     bool downLeft = IsEmptyOrWater(x - 1, y + 1) && InBounds(x - 1, y + 1);
     bool downRight = IsEmptyOrWater(x + 1, y + 1) && InBounds(x + 1, y + 1);
+    if (!down)
+    {
+        yVelocity = 1.0f;
+        yDelta = yVelocity;
+    }
+    if (IsWater(x, y + 1))
+    {
+        yVelocity = 1.0f;
+        yDelta = yVelocity;
+    }
     p->setVelocity(Vector2{(float)xVelocity, (float)yVelocity});
 
     if (downLeft && downRight)
@@ -296,11 +316,24 @@ void ParticleWorld::UpdateSand(int x, int y)
 
 void ParticleWorld::UpdateWater(int x, int y)
 {
+    Particle *p = ParticleAtCoord(x, y);
+    Vector2 vel = p->getVelocity();
+    Vector2 accel = p->getAcceleration();
+    // calculate y velocity
+    float xVelocity = vel.x + accel.x * _deltaTime;
+    float yVelocity = vel.y + accel.y * _deltaTime;
+    int xDelta = xVelocity;
+    int yDelta = yVelocity;
     bool down = IsEmpty(x, y + 1) && InBounds(x, y + 1);
     bool left = IsEmpty(x - 1, y) && InBounds(x - 1, y);
     bool right = IsEmpty(x + 1, y) && InBounds(x + 1, y);
     bool downLeft = IsEmpty(x - 1, y + 1) && InBounds(x - 1, y + 1);
     bool downRight = IsEmpty(x + 1, y + 1) && InBounds(x + 1, y + 1);
+    if (!down)
+    {
+        yVelocity = 1.0f;
+        yDelta = yVelocity;
+    }
 
     if (left && right)
     {
@@ -312,17 +345,28 @@ void ParticleWorld::UpdateWater(int x, int y)
         downLeft = std::rand() % 2;
         downRight = !downLeft;
     }
+    if(left != right) {//add spread velocity
+        int direction = 1 - (left * 2);
+        xVelocity = direction * (rand() % 5 + 5.f);
+        xDelta = xVelocity;
+    }
+    p->setVelocity(Vector2{(float)xVelocity, (float)yVelocity});
     if (down)
     {
-        MoveParticle(x, y, x, y + 1);
-    }
-    else if (left)
-    {
-        MoveParticle(x, y, x - 1, y);
-    }
-    else if (right)
-    {
-        MoveParticle(x, y, x + 1, y);
+        int dstY = y;
+        for (int i = 1; i <= yDelta; i++)
+        {
+            int t = y + i;
+            if (IsEmptyOrWater(x, t) && InBounds(x, t))
+            {
+                dstY = t;
+            }
+            else
+            {
+                break;
+            }
+        }
+        MoveParticle(x, y, x, dstY);
     }
     else if (downLeft)
     {
@@ -331,6 +375,25 @@ void ParticleWorld::UpdateWater(int x, int y)
     else if (downRight)
     {
         MoveParticle(x, y, x + 1, y + 1);
+    }
+    else if (left || right)
+    {
+        int dstX = x;
+        int direction = xDelta > 0 ? 1 : -1;
+        xDelta = abs(xDelta);
+        for (int i = 1; i <= xDelta; i++)
+        {
+            int t = x + (i * direction);
+            if (IsEmptyOrWater(t, y) && InBounds(t, y))
+            {
+                dstX = t;
+            }
+            else
+            {
+                break;
+            }
+        }
+        MoveParticle(x, y, dstX, y);
     }
 }
 

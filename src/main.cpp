@@ -9,7 +9,7 @@ int main()
     cout << "Hello, World!" << endl;
     const int screenWidth = 1200;
     const int screenHeight = 900;
-    const int pixelSize = 3;
+    const int pixelSize = 4;
     const int virtualWidth = screenWidth / pixelSize;
     const int virtualHeight = screenHeight / pixelSize;
     const double virtualRatio = (double)virtualWidth / (double)screenHeight;
@@ -31,7 +31,7 @@ int main()
     ParticleWorld particleWorld(virtualWidth, virtualHeight);
 
     double previousTime = GetTime();
-    int targetFPS = 60;
+    int targetFPS = -10;
     float deltaTime = 0.0f;
     double currentTime = 0.0;
     double updateDrawTime = 0.0;
@@ -52,11 +52,11 @@ int main()
 
         if (click)
         {
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 100; i++)
             {
-                int r = 1;
-                int xO = 0;
-                int yO = 0;
+                int r = 50;
+                int xO = rand() % r - ( r / 2);
+                int yO = rand() % r - ( r / 2);
                 Color drawColor = WHITE;
                 switch (drawType)
                 {
